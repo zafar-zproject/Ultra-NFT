@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Header from './components/Header';
 import NavigationBar from './components/NavigationBar';
 import LiveStream from './components/LiveStream';
@@ -8,25 +8,77 @@ import ShopSection from './components/ShopSection';
 import RocketGame from './components/RocketGame';
 import MinesGame from './components/MinesGame';
 import { TabType } from './types';
+import { syncUser, updateUserBalance, UserProfile, TransactionRecord, subscribeToTransactions, recordTransaction, auth } from './lib/firebase';
+import TransactionHistory from './components/TransactionHistory';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [balance, setBalance] = useState(9000000.00);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [showTopUp, setShowTopUp] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
   const [activeGame, setActiveGame] = useState<'none' | 'rocket' | 'mines'>('none');
 
-  const addStars = (stars: number) => {
+  useEffect(() => {
+    let unsubscribeTx: () => void = () => {};
+
+    const initApp = async () => {
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        const tgUser = tg.initDataUnsafe?.user;
+        if (tgUser) {
+          const profile = await syncUser(tgUser);
+          if (profile) {
+            setUserProfile(profile);
+            setBalance(profile.balance);
+            
+            // Subscribe to transactions once auth is ready
+            unsubscribeTx = subscribeToTransactions((txs) => {
+              setTransactions(txs);
+            });
+          }
+        }
+      }
+    };
+    initApp();
+    return () => unsubscribeTx();
+  }, []);
+
+  const addStars = async (stars: number) => {
     const tonEquivalent = stars * 0.0025;
-    setBalance(prev => prev + tonEquivalent);
+    const newBalance = balance + tonEquivalent;
+    setBalance(newBalance);
+    await updateUserBalance(newBalance);
+    
+    // Log transaction
+    await recordTransaction({
+      userId: auth.currentUser?.uid || '',
+      type: 'deposit',
+      amount: tonEquivalent,
+      description: `Stars Deposit (+${stars}⭐️)`,
+      timestamp: null
+    });
+
     setShowTopUp(false);
   };
 
-  const handleWin = useCallback((amount: number) => {
-    setBalance(prev => prev + amount);
+  const handleWin = useCallback(async (amount: number) => {
+    setBalance(prev => {
+      const newBalance = prev + amount;
+      updateUserBalance(newBalance);
+      return newBalance;
+    });
   }, []);
 
-  const handleLose = useCallback((amount: number) => {
-    setBalance(prev => prev - amount);
+  const handleLose = useCallback(async (amount: number) => {
+    setBalance(prev => {
+      const newBalance = prev - amount;
+      updateUserBalance(newBalance);
+      return newBalance;
+    });
   }, []);
 
   const handleOpenBox = useCallback((cost: number) => {
@@ -34,7 +86,9 @@ export default function App() {
     setBalance(prev => {
       if (prev >= cost) {
         success = true;
-        return prev - cost;
+        const newBalance = prev - cost;
+        updateUserBalance(newBalance);
+        return newBalance;
       }
       return prev;
     });
@@ -46,7 +100,12 @@ export default function App() {
       <div className="fixed -top-20 -left-20 w-80 h-80 bg-brand-purple/10 blur-[120px] rounded-full pointer-events-none" />
       <div className="fixed top-1/2 -right-20 w-80 h-80 bg-brand-blue/10 blur-[120px] rounded-full pointer-events-none" />
       
-      <Header balance={balance} />
+      <Header 
+        balance={balance} 
+        photoUrl={userProfile?.photoUrl} 
+        firstName={userProfile?.firstName} 
+        onPortfolioClick={() => setShowHistory(true)}
+      />
 
       <main className="flex flex-col gap-4 relative z-10">
         <LiveStream />
@@ -155,6 +214,13 @@ export default function App() {
       )}
 
       <NavigationBar activeTab={activeTab} setActiveTab={setActiveTab} />
+
+      {showHistory && (
+        <TransactionHistory 
+          transactions={transactions} 
+          onClose={() => setShowHistory(false)} 
+        />
+      )}
     </div>
   );
 }

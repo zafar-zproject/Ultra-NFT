@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bomb, Gem, X, Wallet, Settings, LayoutGrid } from 'lucide-react';
+import { recordTransaction, auth } from '../lib/firebase';
 
 interface MinesGameProps {
   balance: number;
@@ -58,6 +59,13 @@ export default function MinesGame({ balance, onWin, onLose, onClose }: MinesGame
       setGameState('lost');
       setRevealed(Array.from({ length: totalCells }, (_, i) => i));
       onLose(bet);
+      recordTransaction({
+        userId: auth.currentUser?.uid || '',
+        type: 'loss',
+        amount: bet,
+        description: `Mines Loss (${gridSize}x${gridSize}, ${mineCount} mines)`,
+        timestamp: null
+      });
     } else {
       const newRevealed = [...revealed, index];
       setRevealed(newRevealed);
@@ -79,9 +87,17 @@ export default function MinesGame({ balance, onWin, onLose, onClose }: MinesGame
 
   const finishGame = (countOverride?: number) => {
     const count = countOverride !== undefined ? countOverride : revealed.length;
-    const profit = bet * (getMultiplier(count) - 1);
+    const multiplier = getMultiplier(count);
+    const profit = bet * (multiplier - 1);
     onWin(profit);
     setGameState('won');
+    recordTransaction({
+      userId: auth.currentUser?.uid || '',
+      type: 'win',
+      amount: profit,
+      description: `Mines Win @ ${multiplier.toFixed(2)}x (${gridSize}x${gridSize})`,
+      timestamp: null
+    });
   };
 
   return (

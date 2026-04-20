@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, useAnimation, AnimatePresence } from 'motion/react';
 import { Wallet, Box, X, TrendingUp } from 'lucide-react';
 import { NFT } from '../types';
+import { recordTransaction, auth } from '../lib/firebase';
 
 import tgCat from '@/src/assets/tg_cat.png';
 import tgFrog from '@/src/assets/tg_frog.png';
@@ -51,6 +52,14 @@ export default function ShopSection({ balance, onOpenBox }: ShopSectionProps) {
       alert("Insufficient TON balance! Please top up.");
       return;
     }
+
+    recordTransaction({
+      userId: auth.currentUser?.uid || '',
+      type: 'purchase',
+      amount: boxPrice,
+      description: 'Opened VIP Box',
+      timestamp: null
+    });
 
     setIsSpinning(true);
     setWinner(null);

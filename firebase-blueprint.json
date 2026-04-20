@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information and balance",
+      "type": "object",
+      "properties": {
+        "telegramId": { "type": "string", "description": "Telegram user ID" },
+        "firstName": { "type": "string", "description": "Telegram first name" },
+        "lastName": { "type": "string", "description": "Telegram last name" },
+        "username": { "type": "string", "description": "Telegram username" },
+        "photoUrl": { "type": "string", "description": "Telegram profile photo URL" },
+        "balance": { "type": "number", "description": "User balance in TON" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Last time user data was synced" }
+      },
+      "required": ["telegramId", "firstName", "balance"]
+    },
+    "Transaction": {
+      "title": "Transaction Record",
+      "description": "Log of financial activities",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "User ID associated with the transaction" },
+        "type": { "type": "string", "enum": ["win", "loss", "deposit", "withdrawal", "purchase"], "description": "Type of transaction" },
+        "amount": { "type": "number", "description": "Amount in TON" },
+        "description": { "type": "string", "description": "Human-readable description" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the transaction occurred" }
+      },
+      "required": ["userId", "type", "amount", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of users keyed by their unique Telegram ID or Firebase Auth UID"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Sub-collection of transactions for a specific user"
+    }
+  }
+}

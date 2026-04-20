@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Rocket, Wallet, TrendingUp, X, Heart } from 'lucide-react';
+import { recordTransaction, auth } from '../lib/firebase';
 
 interface RocketGameProps {
   balance: number;
@@ -52,6 +53,13 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
     if (gameState === 'running' && multiplier >= crashValue && crashValue > 0) {
       setGameState('crashed');
       onLose(bet);
+      recordTransaction({
+        userId: auth.currentUser?.uid || '',
+        type: 'loss',
+        amount: bet,
+        description: `Rocket Crash @ ${multiplier.toFixed(2)}x`,
+        timestamp: null
+      });
       if (timerRef.current) clearInterval(timerRef.current);
     }
   }, [multiplier, crashValue, gameState, onLose, bet]);
@@ -64,6 +72,13 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
     setWinAmount(win);
     setGameState('won');
     onWin(win - bet);
+    recordTransaction({
+      userId: auth.currentUser?.uid || '',
+      type: 'win',
+      amount: win - bet,
+      description: `Rocket Cashout @ ${multiplier.toFixed(2)}x`,
+      timestamp: null
+    });
   };
 
   const reset = () => {

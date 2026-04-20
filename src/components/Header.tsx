@@ -5,6 +5,8 @@ declare global {
   interface Window {
     Telegram?: {
       WebApp: {
+        ready: () => void;
+        expand: () => void;
         initDataUnsafe: {
           user?: {
             id: number;
@@ -21,33 +23,27 @@ declare global {
 
 interface HeaderProps {
   balance: number;
+  photoUrl?: string;
+  firstName?: string;
+  onPortfolioClick?: () => void;
 }
 
-export default function Header({ balance }: HeaderProps) {
-  const [userData, setUserData] = useState({
-    name: 'Player',
-    photoUrl: 'https://picsum.photos/seed/user_premium/100/100'
-  });
-
-  useEffect(() => {
-    if (window.Telegram?.WebApp.initDataUnsafe.user) {
-      const user = window.Telegram.WebApp.initDataUnsafe.user;
-      setUserData({
-        name: user.first_name || 'Player',
-        photoUrl: user.photo_url || 'https://picsum.photos/seed/user_premium/100/100'
-      });
-    }
-  }, []);
+export default function Header({ balance, photoUrl, firstName, onPortfolioClick }: HeaderProps) {
+  const displayPhoto = photoUrl || 'https://picsum.photos/seed/user_premium/100/100';
+  const displayName = firstName || 'Player';
 
   return (
     <header className="flex items-center justify-between px-6 pt-5 pb-4 bg-transparent sticky top-0 z-50 backdrop-blur-sm">
       <div className="flex items-center gap-4">
         <div className="relative">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-purple/40 to-brand-blue/40 p-[1px] backdrop-blur-xl transition-transform active:scale-95 cursor-pointer">
+          <div 
+            onClick={onPortfolioClick}
+            className="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-purple/40 to-brand-blue/40 p-[1px] backdrop-blur-xl transition-transform active:scale-95 cursor-pointer"
+          >
             <div className="w-full h-full rounded-2xl bg-brand-bg relative overflow-hidden p-1">
               <img 
-                src={userData.photoUrl} 
-                alt={userData.name} 
+                src={displayPhoto} 
+                alt={displayName} 
                 className="w-full h-full rounded-xl object-cover"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
@@ -63,7 +59,7 @@ export default function Header({ balance }: HeaderProps) {
           </div>
         </div>
         
-        <div className="flex flex-col">
+        <div className="flex flex-col cursor-pointer active:opacity-70 transition-opacity" onClick={onPortfolioClick}>
           <span className="text-[9px] font-black text-brand-purple uppercase tracking-[0.2em] leading-none mb-1">Portfolio</span>
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 bg-brand-blue/20 rounded-lg flex items-center justify-center">
