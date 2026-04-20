@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Header from './components/Header';
 import NavigationBar from './components/NavigationBar';
 import LiveStream from './components/LiveStream';
@@ -21,21 +21,25 @@ export default function App() {
     setShowTopUp(false);
   };
 
-  const handleWin = (amount: number) => {
+  const handleWin = useCallback((amount: number) => {
     setBalance(prev => prev + amount);
-  };
+  }, []);
 
-  const handleLose = (amount: number) => {
+  const handleLose = useCallback((amount: number) => {
     setBalance(prev => prev - amount);
-  };
+  }, []);
 
-  const handleOpenBox = (cost: number) => {
-    if (balance >= cost) {
-      setBalance(prev => prev - cost);
-      return true;
-    }
-    return false;
-  };
+  const handleOpenBox = useCallback((cost: number) => {
+    let success = false;
+    setBalance(prev => {
+      if (prev >= cost) {
+        success = true;
+        return prev - cost;
+      }
+      return prev;
+    });
+    return success;
+  }, []);
 
   return (
     <div className="min-h-screen bg-brand-bg text-white max-w-md mx-auto relative overflow-x-hidden pb-32 pt-2 glow-mesh font-sans">

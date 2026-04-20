@@ -13,16 +13,28 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
   const [gameState, setGameState] = useState<'idle' | 'running' | 'crashed' | 'won'>('idle');
   const [multiplier, setMultiplier] = useState(1.0);
   const [bet, setBet] = useState(0.1);
+  const [betInput, setBetInput] = useState('0.1');
   const [crashValue, setCrashValue] = useState(0);
   const [winAmount, setWinAmount] = useState(0);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const startLevel = () => {
-    if (balance < bet) return;
+    const finalBet = parseFloat(betInput);
+    if (balance < finalBet || isNaN(finalBet) || finalBet <= 0) {
+      alert("Invalid bet or insufficient balance!");
+      return;
+    }
     
-    // Random crash value between 1.01 and 20.00
-    const randomCrash = 1 + Math.random() * 19;
+    setBet(finalBet);
+    
+    // Realistic Crash Algorithm:
+    // P(m) = 1 / m. 
+    // formula: 0.98 / (1 - random)
+    // This gives a 2% house edge and allows for rare 100x+ or even 1000x+
+    let randomCrash = 0.98 / (1 - Math.random());
+    if (randomCrash < 1.01) randomCrash = 1.01; // Minimum crash
+    
     setCrashValue(randomCrash);
     setMultiplier(1.0);
     setGameState('running');
@@ -30,16 +42,19 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
     timerRef.current = setInterval(() => {
       setMultiplier((prev) => {
         const next = prev + 0.05 * (prev / 2); // Exponential growth
-        if (next >= randomCrash) {
-          if (timerRef.current) clearInterval(timerRef.current);
-          setGameState('crashed');
-          onLose(bet);
-          return randomCrash;
-        }
-        return next;
+        // side effects removed from here, handled in useEffect
+        return Math.min(next, randomCrash);
       });
     }, 100);
   };
+
+  useEffect(() => {
+    if (gameState === 'running' && multiplier >= crashValue && crashValue > 0) {
+      setGameState('crashed');
+      onLose(bet);
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+  }, [multiplier, crashValue, gameState, onLose, bet]);
 
   const cashOut = () => {
     if (gameState !== 'running') return;
@@ -48,7 +63,7 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
     const win = bet * multiplier;
     setWinAmount(win);
     setGameState('won');
-    onWin(win - bet); // The function expects the profit or the final balance adjust
+    onWin(win - bet);
   };
 
   const reset = () => {
@@ -79,7 +94,6 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
       >
         {/* Game Area */}
         <div className="h-64 relative bg-black/40 flex flex-col items-center justify-center overflow-hidden">
-           {/* Background Stars/Glow */}
            <div className="absolute inset-0 opacity-20">
               <div className="absolute top-10 left-10 w-1 h-1 bg-white rounded-full animate-pulse" />
               <div className="absolute top-40 right-20 w-1 h-1 bg-white rounded-full animate-pulse delay-75" />
@@ -111,7 +125,6 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
               )}
            </div>
 
-           {/* Close Button */}
            <button onClick={onClose} className="absolute top-6 right-6 w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
              <X className="w-4 h-4 text-white/40" />
            </button>
@@ -119,28 +132,26 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
 
         {/* Controls */}
         <div className="p-8 flex flex-col gap-6">
-           <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-end">
-                <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Wager Amount</span>
-                <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest">{(balance).toFixed(3)} TON Avail.</span>
-              </div>
-              <div className="flex gap-2">
-                 {[0.05, 0.1, 0.5, 1.0].map((val) => (
-                   <button 
-                     key={val}
-                     onClick={() => setBet(val)}
-                     className={`flex-1 py-3 rounded-2xl border text-xs font-black transition-all ${bet === val ? 'bg-brand-purple border-brand-purple' : 'bg-white/5 border-white/10 text-white/40'}`}
-                   >
-                     {val}
-                   </button>
-                 ))}
+           <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 text-left">
+                 <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-black text-white/30 uppercase tracking-widest">Wager Amount</span>
+                    <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest">{(balance).toFixed(3)} TON Avail.</span>
+                 </div>
+                 <div className="flex gap-2">
+                    <input 
+                      type="number" value={betInput} onChange={(e) => setBetInput(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs font-black outline-none focus:border-brand-purple transition-all"
+                      placeholder="0.00"
+                    />
+                    <button onClick={() => setBetInput((parseFloat(betInput) * 2 || 0).toString())} className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest">x2</button>
+                 </div>
               </div>
            </div>
 
            {gameState === 'idle' || gameState === 'crashed' || gameState === 'won' ? (
              <button 
                onClick={startLevel}
-               disabled={balance < bet}
                className="w-full h-16 bg-brand-orange rounded-[24px] font-black uppercase tracking-[0.2em] shadow-[0_10px_30px_rgba(255,138,0,0.3)] active:scale-95 transition-all flex items-center justify-center gap-3"
              >
                <Rocket className="w-5 h-5" />
@@ -157,7 +168,7 @@ export default function RocketGame({ balance, onWin, onLose, onClose }: RocketGa
            )}
            
            <p className="text-[9px] text-white/20 text-center uppercase tracking-widest font-black italic">
-             Catch the rocket before it crashes. Max x20.00
+             Catch the rocket before it crashes. Uncapped Multiplier.
            </p>
         </div>
 
