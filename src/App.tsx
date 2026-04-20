@@ -5,26 +5,75 @@ import LiveStream from './components/LiveStream';
 import BannerCards from './components/BannerCards';
 import ActionGrid from './components/ActionGrid';
 import ShopSection from './components/ShopSection';
+import RocketGame from './components/RocketGame';
+import MinesGame from './components/MinesGame';
 import { TabType } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
+  const [balance, setBalance] = useState(9999.00);
+  const [showTopUp, setShowTopUp] = useState(false);
+  const [activeGame, setActiveGame] = useState<'none' | 'rocket' | 'mines'>('none');
+
+  const addStars = (stars: number) => {
+    const tonEquivalent = stars * 0.0025;
+    setBalance(prev => prev + tonEquivalent);
+    setShowTopUp(false);
+  };
+
+  const handleWin = (amount: number) => {
+    setBalance(prev => prev + amount);
+  };
+
+  const handleLose = (amount: number) => {
+    setBalance(prev => prev - amount);
+  };
+
+  const handleOpenBox = (cost: number) => {
+    if (balance >= cost) {
+      setBalance(prev => prev - cost);
+      return true;
+    }
+    return false;
+  };
 
   return (
     <div className="min-h-screen bg-brand-bg text-white max-w-md mx-auto relative overflow-x-hidden pb-32 pt-2 glow-mesh font-sans">
       <div className="fixed -top-20 -left-20 w-80 h-80 bg-brand-purple/10 blur-[120px] rounded-full pointer-events-none" />
       <div className="fixed top-1/2 -right-20 w-80 h-80 bg-brand-blue/10 blur-[120px] rounded-full pointer-events-none" />
       
-      <Header />
+      <Header balance={balance} />
 
       <main className="flex flex-col gap-4 relative z-10">
         <LiveStream />
 
         {activeTab === 'home' && (
           <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <BannerCards />
+            <div onClick={(e: any) => {
+              const target = (e.target as HTMLElement).closest('.cursor-pointer');
+              if (!target) return;
+              const text = target.textContent?.toLowerCase();
+              if (text?.includes('rocket')) setActiveGame('rocket');
+              if (text?.includes('mines')) setActiveGame('mines');
+            }}>
+              <BannerCards />
+            </div>
+            
+            <div className="px-4">
+               <button 
+                 onClick={() => setShowTopUp(true)}
+                 className="w-full h-14 bg-brand-purple/10 border border-brand-purple/20 rounded-2xl flex items-center justify-between px-6 active:scale-95 transition-all text-brand-purple"
+               >
+                 <div className="flex items-center gap-3">
+                   <span className="text-xl font-black">⭐️</span>
+                   <span className="text-xs font-black uppercase tracking-widest">Deposit Stars</span>
+                 </div>
+                 <span className="text-[10px] font-black uppercase bg-brand-purple/20 px-2 py-1 rounded-md">Bonus +5%</span>
+               </button>
+            </div>
+
             <ActionGrid />
-            <ShopSection />
+            <ShopSection balance={balance} onOpenBox={handleOpenBox} />
           </div>
         )}
 
@@ -53,6 +102,53 @@ export default function App() {
           </div>
         )}
       </main>
+
+      {/* Game Modals */}
+      {activeGame === 'rocket' && (
+        <RocketGame 
+          balance={balance} 
+          onWin={handleWin} 
+          onLose={handleLose} 
+          onClose={() => setActiveGame('none')} 
+        />
+      )}
+
+      {activeGame === 'mines' && (
+        <MinesGame 
+          balance={balance} 
+          onWin={handleWin} 
+          onLose={handleLose} 
+          onClose={() => setActiveGame('none')} 
+        />
+      )}
+
+      {showTopUp && (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-4">
+           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowTopUp(false)} />
+           <div className="relative bg-brand-bg border-t border-x border-white/10 rounded-t-[40px] w-full p-8 flex flex-col gap-6 animate-in slide-in-from-bottom-full duration-300">
+              <div className="w-12 h-1 bg-white/10 rounded-full mx-auto" />
+              <div className="flex flex-col items-center text-center gap-2">
+                 <h2 className="text-2xl font-black uppercase font-display italic tracking-tighter">Top Up with Stars</h2>
+                 <p className="text-white/40 text-xs font-medium">Select amount to deposit and get TON instantly</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                 {[50, 250, 500, 1000].map((stars) => (
+                   <button 
+                     key={stars}
+                     onClick={() => addStars(stars)}
+                     className="bg-white/5 border border-white/10 p-5 rounded-3xl flex flex-col items-center gap-1 active:scale-95 transition-all hover:bg-white/10 group"
+                   >
+                     <span className="text-2xl group-hover:scale-125 transition-transform">⭐️ {stars}</span>
+                     <span className="text-[10px] font-black text-brand-purple uppercase tracking-widest">≈ {(stars * 0.0025).toFixed(3)} TON</span>
+                   </button>
+                 ))}
+              </div>
+
+              <p className="text-[9px] text-white/20 text-center uppercase tracking-widest font-black italic">Calculation: 1 TON ≈ 400 Stars</p>
+           </div>
+        </div>
+      )}
 
       <NavigationBar activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>

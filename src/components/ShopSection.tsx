@@ -25,12 +25,19 @@ const telegramNfts: NFT[] = [
   { id: 'pumpkin', name: 'Spooky Pumpkin', rarity: 'Epic', image: tgPumpkin, price: 3300.00 },
 ];
 
-export default function ShopSection() {
+interface ShopSectionProps {
+  balance: number;
+  onOpenBox: (cost: number) => boolean;
+}
+
+export default function ShopSection({ balance, onOpenBox }: ShopSectionProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [winner, setWinner] = useState<NFT | null>(null);
   const [showModal, setShowModal] = useState(false);
   const controls = useAnimation();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const boxPrice = 50.0;
 
   // Generate a long list of items for the roulette
   const rouletteItems = [...Array(40)].map((_, i) => telegramNfts[i % telegramNfts.length]);
@@ -38,6 +45,13 @@ export default function ShopSection() {
   const handleStartSpin = async () => {
     if (isSpinning) return;
     
+    // Check balance and subtract
+    const success = onOpenBox(boxPrice);
+    if (!success) {
+      alert("Insufficient TON balance! Please top up.");
+      return;
+    }
+
     setIsSpinning(true);
     setWinner(null);
 
@@ -116,7 +130,7 @@ export default function ShopSection() {
           `}
         >
           <Wallet className="w-5 h-5" />
-          {isSpinning ? 'Opening...' : 'Top Up Balance'}
+          {isSpinning ? 'Opening...' : balance < boxPrice ? 'Insufficient Balance' : `Open Box - ${boxPrice.toFixed(2)} TON`}
         </button>
       </div>
 
