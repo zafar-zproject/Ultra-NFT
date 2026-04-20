@@ -11,7 +11,7 @@ import { TabType } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [balance, setBalance] = useState(9999.00);
+  const [balance, setBalance] = useState(9000000.00);
   const [showTopUp, setShowTopUp] = useState(false);
   const [activeGame, setActiveGame] = useState<'none' | 'rocket' | 'mines'>('none');
 
@@ -129,7 +129,7 @@ export default function App() {
       {showTopUp && (
         <div className="fixed inset-0 z-[100] flex items-end justify-center p-4">
            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowTopUp(false)} />
-           <div className="relative bg-brand-bg border-t border-x border-white/10 rounded-t-[40px] w-full p-8 flex flex-col gap-6 animate-in slide-in-from-bottom-full duration-300">
+           <div className="relative bg-brand-bg border-t border-x border-white/10 rounded-t-[40px] w-full max-h-[90vh] p-8 pb-12 overflow-y-auto hide-scrollbar flex flex-col gap-6 animate-in slide-in-from-bottom-full duration-300">
               <div className="w-12 h-1 bg-white/10 rounded-full mx-auto" />
               <div className="flex flex-col items-center text-center gap-2">
                  <h2 className="text-2xl font-black uppercase font-display italic tracking-tighter">Top Up with Stars</h2>
