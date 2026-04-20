@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Space+Grotesk:wght@500;700&display=swap');
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", sans-serif;
+  
+  --color-brand-bg: #0A0A0B;
+  --color-brand-purple: #9D50FF;
+  --color-brand-green: #37FF94;
+  --color-brand-orange: #FF8A00;
+  --color-brand-blue: #00A3FF;
+  
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-bg text-white font-sans antialiased select-none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+@layer components {
+  .neon-border-purple {
+    @apply border border-brand-purple/40 shadow-[0_0_20px_rgba(157,80,255,0.2)];
+  }
+  
+  .glass-card {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08];
+  }
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(5deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.float-animation {
+  animation: float 4s ease-in-out infinite;
+}
+
+.glow-mesh {
+  background: 
+    radial-gradient(at 0% 0%, rgba(157, 80, 255, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(0, 163, 255, 0.15) 0px, transparent 50%);
+}
+
